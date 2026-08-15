@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  gallery-dl-web:
+    build: .
+    container_name: gallery-dl-web
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+
+  # Optional Telegram bot service (uncomment if you want to run both)
+  # gallery-dl-bot:
+  #   build: .
+  #   container_name: gallery-dl-bot
+  #   command: ["python", "bot.py"]
+  #   restart: always
+  #   environment:
+  #     - BOT_TOKEN=${BOT_TOKEN}
+  #     - ALLOWED_USERS=${ALLOWED_USERS}

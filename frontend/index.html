@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Gallery-DL Media Extractor & Web Gallery</title>
+  <meta name="description" content="Extract direct high-resolution image and video media URLs from any supported website with gallery-dl.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <i data-lucide="sparkles" class="logo-icon"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Gallery-DL <span class="badge-accent">Extractor</span></h1>
+          <p class="subtitle">Extract direct media & image gallery links from any web page</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="historyToggleBtn" class="btn-ghost" title="Extraction History">
+          <i data-lucide="history"></i>
+          <span>History</span>
+          <span id="historyBadge" class="counter-pill" style="display:none;">0</span>
+        </button>
+        <button id="themeToggleBtn" class="btn-icon" title="Toggle Theme">
+          <i data-lucide="moon" id="themeIcon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Input Card -->
+      <section class="card input-card">
+        <div class="card-header-tabs">
+          <button class="tab-btn active" id="singleUrlTab" data-mode="single">
+            <i data-lucide="link"></i> Single URL
+          </button>
+          <button class="tab-btn" id="batchUrlTab" data-mode="batch">
+            <i data-lucide="layers"></i> Batch URLs
+          </button>
+        </div>
+
+        <form id="extractForm" class="extract-form">
+          <!-- Single URL Input Mode -->
+          <div id="singleInputContainer" class="input-group">
+            <div class="input-wrapper">
+              <i data-lucide="search" class="input-icon"></i>
+              <input 
+                type="url" 
+                id="urlInput" 
+                placeholder="Paste link here (Twitter/X, Instagram, Reddit, Pinterest, Imgur, Pixiv...)" 
+                autocomplete="off"
+                spellcheck="false"
+                required
+              />
+              <button type="button" id="pasteBtn" class="action-inside-btn" title="Paste from clipboard">
+                <i data-lucide="clipboard-paste"></i>
+                <span>Paste</span>
+              </button>
+              <button type="button" id="clearBtn" class="action-inside-btn" title="Clear input" style="display: none;">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Batch URL Mode -->
+          <div id="batchInputContainer" class="input-group" style="display: none;">
+            <div class="textarea-wrapper">
+              <textarea 
+                id="batchInput" 
+                rows="4" 
+                placeholder="Paste one or multiple URLs (one per line)..."
+                spellcheck="false"
+              ></textarea>
+              <button type="button" id="batchPasteBtn" class="action-inside-btn textarea-paste-btn" title="Paste from clipboard">
+                <i data-lucide="clipboard-paste"></i> Paste All
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="form-bottom-row">
+            <div class="platform-chips">
+              <span class="chips-label">Quick samples:</span>
+              <button type="button" class="chip" data-sample="https://danbooru.donmai.us/posts/1"><i data-lucide="palette"></i> Danbooru Post</button>
+              <button type="button" class="chip" data-sample="https://danbooru.donmai.us/posts/2"><i data-lucide="image"></i> Danbooru Sample</button>
+              <button type="button" class="chip" data-sample="https://danbooru.donmai.us/posts?tags=rating%3Ageneral"><i data-lucide="layers"></i> Tag Gallery</button>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-primary">
+              <span class="btn-text">
+                <i data-lucide="zap"></i> Extract Direct Links
+              </span>
+              <div class="btn-loader" style="display: none;">
+                <div class="spinner"></div>
+                <span>Extracting with gallery-dl...</span>
+              </div>
+            </button>
+          </div>
+        </form>
+
+        <!-- Status Progress Indicator -->
+        <div id="statusIndicator" class="status-indicator" style="display: none;">
+          <div class="pulse-dot"></div>
+          <div class="status-info">
+            <span id="statusText" class="status-text">Connecting to gallery-dl engine...</span>
+            <span id="statusTimer" class="status-timer">0.0s</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Error Banner -->
+      <section id="errorBanner" class="error-banner card" style="display: none;">
+        <div class="error-icon-wrapper">
+          <i data-lucide="alert-triangle"></i>
+        </div>
+        <div class="error-details">
+          <h4>Extraction Failed</h4>
+          <p id="errorMessage">Something went wrong while executing gallery-dl.</p>
+        </div>
+        <button id="dismissErrorBtn" class="btn-icon" title="Dismiss error">
+          <i data-lucide="x"></i>
+        </button>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultsSection" class="results-section card" style="display: none;">
+        <!-- Results Summary Header -->
+        <div class="results-header">
+          <div class="results-title-group">
+            <div class="results-count-badge">
+              <i data-lucide="check-circle-2"></i>
+              <span id="totalCount">0</span> Media Links
+            </div>
+            <div class="source-url-tag" id="sourceUrlTag" title="Source link"></div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="bulk-actions">
+            <button id="copyAllBtn" class="btn-secondary" title="Copy all URLs to clipboard">
+              <i data-lucide="copy"></i>
+              <span>Copy All</span>
+            </button>
+            
+            <div class="dropdown-wrapper">
+              <button id="exportDropdownBtn" class="btn-secondary" title="Export Links">
+                <i data-lucide="download"></i>
+                <span>Export</span>
+                <i data-lucide="chevron-down" class="dropdown-chevron"></i>
+              </button>
+              <div id="exportMenu" class="dropdown-menu" style="display: none;">
+                <button class="menu-item" id="exportTxtBtn"><i data-lucide="file-text"></i> Plain Text (.txt)</button>
+                <button class="menu-item" id="exportJsonBtn"><i data-lucide="code-2"></i> JSON File (.json)</button>
+                <button class="menu-item" id="exportM3uBtn"><i data-lucide="list-music"></i> M3U Playlist (.m3u)</button>
+              </div>
+            </div>
+
+            <button id="telegraphBtn" class="btn-accent" title="Publish to Telegra.ph Web Page">
+              <i data-lucide="globe"></i>
+              <span>Telegra.ph</span>
+            </button>
+
+            <button id="openAllBtn" class="btn-ghost" title="Open all links in browser tabs">
+              <i data-lucide="external-link"></i>
+              <span>Open All</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & View Controls -->
+        <div class="controls-bar">
+          <!-- Type Filter Tabs -->
+          <div class="type-filter-group" id="typeFilterGroup">
+            <button class="filter-pill active" data-filter="all">All (<span id="filterAllCount">0</span>)</button>
+            <button class="filter-pill" data-filter="image">Images (<span id="filterImgCount">0</span>)</button>
+            <button class="filter-pill" data-filter="video">Videos (<span id="filterVidCount">0</span>)</button>
+            <button class="filter-pill" data-filter="audio">Audio (<span id="filterAudCount">0</span>)</button>
+          </div>
+
+          <!-- Search & View Layout Toggle -->
+          <div class="view-controls">
+            <div class="search-box">
+              <i data-lucide="filter"></i>
+              <input type="text" id="filterInput" placeholder="Filter links..." />
+            </div>
+            
+            <div class="layout-toggle">
+              <button id="gridViewBtn" class="btn-icon active" title="Grid preview layout">
+                <i data-lucide="layout-grid"></i>
+              </button>
+              <button id="listViewBtn" class="btn-icon" title="Compact list layout">
+                <i data-lucide="list"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Media Grid View -->
+        <div id="mediaGrid" class="media-grid">
+          <!-- Injected dynamically by JS -->
+        </div>
+
+        <!-- Media List View (Hidden by default) -->
+        <div id="mediaList" class="media-list" style="display: none;">
+          <!-- Injected dynamically by JS -->
+        </div>
+
+        <!-- Empty Filter State -->
+        <div id="noFilterResults" class="empty-state" style="display: none;">
+          <i data-lucide="search-x"></i>
+          <p>No links match your current search or filter criteria.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- History Drawer Sidebar -->
+    <aside id="historyDrawer" class="history-drawer">
+      <div class="drawer-header">
+        <h3><i data-lucide="history"></i> Extraction History</h3>
+        <div class="drawer-actions">
+          <button id="clearHistoryBtn" class="btn-ghost-sm" title="Clear all history">
+            <i data-lucide="trash-2"></i> Clear
+          </button>
+          <button id="closeHistoryBtn" class="btn-icon" title="Close drawer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list">
+        <!-- Injected dynamically -->
+      </div>
+    </aside>
+    <div id="drawerOverlay" class="drawer-overlay" style="display: none;"></div>
+
+    <!-- Media Zoom / Lightbox Modal -->
+    <div id="mediaModal" class="media-modal" style="display: none;">
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-content">
+        <button id="closeModalBtn" class="btn-icon modal-close-btn" title="Close Preview">
+          <i data-lucide="x"></i>
+        </button>
+        <div id="modalMediaContainer" class="modal-media-container"></div>
+        <div class="modal-footer">
+          <span id="modalMediaInfo" class="modal-info-text"></span>
+          <div class="modal-actions">
+            <a id="modalOpenBtn" href="#" target="_blank" rel="noreferrer" class="btn-secondary">
+              <i data-lucide="external-link"></i> Direct Link
+            </a>
+            <button id="modalCopyBtn" class="btn-primary">
+              <i data-lucide="copy"></i> Copy URL
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
