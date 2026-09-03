@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application files and frontend
-COPY extractor.py bot.py server.py ./
+COPY extractor.py bot.py server.py imagefap.py ./
 COPY frontend/ ./frontend/
 
 # Expose Render standard port (Render will also override with $PORT at runtime)
