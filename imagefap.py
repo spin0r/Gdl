@@ -286,6 +286,14 @@ class ImageFapExtractor:
         total_count = gallery_data["count"] or 0
         images: List[Dict[str, Any]] = []
 
+        # Harvest genuine thumbnail URLs from the gallery HTML page
+        gallery_thumbs: Dict[int, str] = {}
+        for thumb_m in re.finditer(r'<img\s+[^>]*?src=["\']([^"\']+/images/thumb/[^"\']*?(\d+)\.[a-zA-Z0-9]+(?:\?[^"\']*)?)["\']', page, re.IGNORECASE):
+            t_src = thumb_m.group(1)
+            pid = TextHelper.parse_int(thumb_m.group(2))
+            if pid:
+                gallery_thumbs[pid] = t_src
+
         if image_id:
             ajax_url = f"{self.ROOT}/photo/{image_id}/"
             params = {"gid": gid, "idx": 0, "partial": "true"}
@@ -336,7 +344,7 @@ class ImageFapExtractor:
                     item = TextHelper.nameext_from_url(img_url)
                     item["num"] = num
                     item["image_id"] = TextHelper.parse_int(item.get("filename"))
-                    item["thumbnail_url"] = thumb_url or TextHelper.make_thumbnail_url(img_url) or ""
+                    item["thumbnail_url"] = thumb_url or gallery_thumbs.get(item["image_id"]) or ""
                     images.append(item)
 
                 if not cnt or (cnt < 24 and total_count and num >= total_count):

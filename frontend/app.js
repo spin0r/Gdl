@@ -339,15 +339,21 @@ document.addEventListener('DOMContentLoaded', () => {
     card.className = 'media-card';
 
     if (item.type === 'image') {
-      const previewSrc = item.thumbnail_url || item.url;
-      const fallbackSrc = item.url;
+      const previewSrc = item.thumbnail_url || '';
       previewHtml = `
         <div class="card-preview-area" data-zoom="true">
-          <img src="${escapeHtml(previewSrc)}" 
-               data-fallback="${escapeHtml(fallbackSrc)}" 
-               alt="${escapeHtml(item.filename)}" 
-               loading="lazy" 
-               onerror="if(this.dataset.triedFallback !== 'true' && this.dataset.fallback && this.src !== this.dataset.fallback){ this.dataset.triedFallback = 'true'; this.src = this.dataset.fallback; }else{ this.parentElement.innerHTML='<div class=\\'preview-fallback\\'><i data-lucide=\\'image-off\\'></i><span>Preview Unavailable</span></div>'; lucide.createIcons(); }" />
+          ${previewSrc ? `
+            <img src="${escapeHtml(previewSrc)}" 
+                 alt="${escapeHtml(item.filename)}" 
+                 loading="lazy" 
+                 referrerpolicy="no-referrer"
+                 onerror="this.parentElement.innerHTML='<div class=\\'preview-fallback\\'><i data-lucide=\\'image-off\\'></i><span>Preview Unavailable</span></div>'; lucide.createIcons();" />
+          ` : `
+            <div class="preview-fallback">
+              <i data-lucide="image"></i>
+              <span>Click to view full image</span>
+            </div>
+          `}
           <span class="card-type-badge image">IMG</span>
           <span class="card-index-badge">#${item.index}</span>
         </div>
