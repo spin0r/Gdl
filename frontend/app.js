@@ -693,6 +693,10 @@ document.addEventListener('DOMContentLoaded', () => {
         card.addEventListener('click', () => {
           currentItems = item.items;
           sourceUrlTag.textContent = item.sourceUrl;
+          // Populate the URL input bar with the source URL
+          setMode('single');
+          urlInput.value = item.sourceUrl;
+          clearBtn.style.display = 'flex';
           applyFilterAndRender();
           resultsSection.style.display = 'block';
           closeDrawer();
