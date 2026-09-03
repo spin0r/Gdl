@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
           resultsSection.style.display = 'block';
           closeDrawer();
           resultsSection.scrollIntoView({ behavior: 'smooth' });
-          showToast(`Restored ${item.items.length} links from history!`, 'success');
+          showToast(`Restored ${item.items.length} links from history. Click "Extract" to refresh expired URLs.`, 'success');
         });
 
         historyList.appendChild(card);
