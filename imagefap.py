@@ -299,13 +299,22 @@ class ImageFapExtractor:
             while True:
                 ajax_page = self.request(ajax_url, params=params, headers=headers)
                 cnt = 0
-                for img_url in TextHelper.extract_iter(ajax_page, '<a href="', '"'):
+
+                # Extract both full-size URLs (<a href>) and thumbnail URLs (<img src>)
+                full_urls = list(TextHelper.extract_iter(ajax_page, '<a href="', '"'))
+                thumb_urls = list(TextHelper.extract_iter(ajax_page, '<img src="', '"'))
+
+                for i, img_url in enumerate(full_urls):
                     num += 1
                     cnt += 1
                     item = TextHelper.nameext_from_url(img_url)
                     item["num"] = num
                     item["image_id"] = TextHelper.parse_int(item.get("filename"))
-                    item["thumbnail_url"] = TextHelper.make_thumbnail_url(img_url)
+                    # Use actual thumbnail from HTML if available, else try to derive
+                    if i < len(thumb_urls) and "imagefap" in thumb_urls[i]:
+                        item["thumbnail_url"] = thumb_urls[i]
+                    else:
+                        item["thumbnail_url"] = TextHelper.make_thumbnail_url(img_url) or ""
                     images.append(item)
 
                 if not cnt or (cnt < 24 and total_count and num >= total_count):
