@@ -340,9 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let previewHtml = '';
     if (item.type === 'image') {
+      const previewSrc = item.thumbnail_url || item.url;
       previewHtml = `
         <div class="card-preview-area" data-zoom="true">
-          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.filename)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'preview-fallback\\'><i data-lucide=\\'image-off\\'></i><span>Preview Unavailable</span></div>'; lucide.createIcons();" />
+          <img src="${escapeHtml(previewSrc)}" alt="${escapeHtml(item.filename)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'preview-fallback\\'><i data-lucide=\\'image-off\\'></i><span>Preview Unavailable</span></div>'; lucide.createIcons();" />
           <span class="card-type-badge image">IMG</span>
           <span class="card-index-badge">#${item.index}</span>
         </div>

@@ -48,13 +48,63 @@ def extract_filename(url: str) -> str:
         pass
     return "media_file"
 
+from imagefap import ImageFapExtractor, BASE_PATTERN as IMAGEFAP_PATTERN
+import re
+
+RE_IMAGEFAP = re.compile(IMAGEFAP_PATTERN, re.IGNORECASE)
+
 async def extract_gallery_urls(url: str) -> tuple[list[dict], str]:
     """
-    Executes 'gallery-dl --get-urls <url>' asynchronously.
+    Extracts direct media URLs from the given URL.
+    Uses native standalone ImageFap extractor for ImageFap URLs,
+    and falls back to gallery-dl if available for other domains.
     Returns (list_of_media_items, error_message).
     Each media item is a dict: { "url": str, "type": str, "filename": str, "index": int }
     """
     try:
+        # Check if URL is ImageFap
+        if RE_IMAGEFAP.search(url):
+            try:
+                loop = asyncio.get_running_loop()
+                extractor_obj = ImageFapExtractor()
+                # Run synchronous scraping in executor
+                result = await loop.run_in_executor(None, extractor_obj.extract, url)
+                
+                media_items = []
+                if result["type"] in ("gallery", "image"):
+                    # For galleries, extract from the images list for thumbnail data
+                    if result["type"] == "gallery":
+                        images_data = result.get("data", {}).get("images", [])
+                        for idx, img in enumerate(images_data, 1):
+                            u = img.get("url", "")
+                            media_type = guess_media_type(u)
+                            filename = extract_filename(u)
+                            media_items.append({
+                                "index": idx,
+                                "url": u,
+                                "type": media_type,
+                                "filename": filename,
+                                "thumbnail_url": img.get("thumbnail_url") or "",
+                            })
+                    else:
+                        # Single image
+                        urls = result.get("urls", [])
+                        for idx, u in enumerate(urls, 1):
+                            media_type = guess_media_type(u)
+                            filename = extract_filename(u)
+                            thumb = u.replace("/images/full/", "/images/thumb/") if "/images/full/" in u else ""
+                            media_items.append({
+                                "index": idx,
+                                "url": u,
+                                "type": media_type,
+                                "filename": filename,
+                                "thumbnail_url": thumb,
+                            })
+                return media_items, ""
+            except Exception as e:
+                logger.error(f"Error extracting ImageFap URL: {e}")
+                return [], str(e)
+
         gallery_dl_bin = shutil.which("gallery-dl")
         if gallery_dl_bin:
             cmd = [gallery_dl_bin, "--get-urls", url]
