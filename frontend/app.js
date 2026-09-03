@@ -338,12 +338,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'media-card';
 
-    let previewHtml = '';
     if (item.type === 'image') {
       const previewSrc = item.thumbnail_url || item.url;
+      const fallbackSrc = item.url;
       previewHtml = `
         <div class="card-preview-area" data-zoom="true">
-          <img src="${escapeHtml(previewSrc)}" alt="${escapeHtml(item.filename)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'preview-fallback\\'><i data-lucide=\\'image-off\\'></i><span>Preview Unavailable</span></div>'; lucide.createIcons();" />
+          <img src="${escapeHtml(previewSrc)}" 
+               data-fallback="${escapeHtml(fallbackSrc)}" 
+               alt="${escapeHtml(item.filename)}" 
+               loading="lazy" 
+               onerror="if(this.dataset.triedFallback !== 'true' && this.dataset.fallback && this.src !== this.dataset.fallback){ this.dataset.triedFallback = 'true'; this.src = this.dataset.fallback; }else{ this.parentElement.innerHTML='<div class=\\'preview-fallback\\'><i data-lucide=\\'image-off\\'></i><span>Preview Unavailable</span></div>'; lucide.createIcons(); }" />
           <span class="card-type-badge image">IMG</span>
           <span class="card-index-badge">#${item.index}</span>
         </div>

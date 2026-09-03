@@ -300,21 +300,43 @@ class ImageFapExtractor:
                 ajax_page = self.request(ajax_url, params=params, headers=headers)
                 cnt = 0
 
-                # Extract both full-size URLs (<a href>) and thumbnail URLs (<img src>)
-                full_urls = list(TextHelper.extract_iter(ajax_page, '<a href="', '"'))
-                thumb_urls = list(TextHelper.extract_iter(ajax_page, '<img src="', '"'))
+                # Extract paired (full_url, thumb_url) items from HTML
+                pairs = []
 
-                for i, img_url in enumerate(full_urls):
+                # Strategy 1: <a href="FULL"><img ... src="THUMB"></a>
+                for a_match in re.finditer(r'<a\s+[^>]*?href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', ajax_page, re.DOTALL | re.IGNORECASE):
+                    href = a_match.group(1)
+                    inner = a_match.group(2)
+                    if "imagefap" in href or "/images/" in href or "photo" in href:
+                        img_m = re.search(r'<img\s+[^>]*?(?:src|data-src)=["\']([^"\']+)["\']', inner, re.IGNORECASE)
+                        thumb = img_m.group(1) if img_m else None
+                        pairs.append((href, thumb))
+
+                # Strategy 2: Table cells <td>...<a href="FULL">...<img src="THUMB">...</td>
+                if not pairs:
+                    for td_match in re.finditer(r'<td[^>]*>(.*?)</td>', ajax_page, re.DOTALL | re.IGNORECASE):
+                        content = td_match.group(1)
+                        a_m = re.search(r'<a\s+[^>]*?href=["\']([^"\']+)["\']', content, re.IGNORECASE)
+                        img_m = re.search(r'<img\s+[^>]*?(?:src|data-src)=["\']([^"\']+)["\']', content, re.IGNORECASE)
+                        if a_m and ("imagefap" in a_m.group(1) or "/images/" in a_m.group(1)):
+                            pairs.append((a_m.group(1), img_m.group(1) if img_m else None))
+
+                # Strategy 3: Standard iteration fallback
+                if not pairs:
+                    full_urls = list(TextHelper.extract_iter(ajax_page, '<a href="', '"'))
+                    all_thumbs = re.findall(r'<img\s+[^>]*?(?:src|data-src)=["\']([^"\']+)["\']', ajax_page, re.IGNORECASE)
+                    valid_thumbs = [t for t in all_thumbs if "thumb" in t or "imagefap" in t]
+                    for i, u in enumerate(full_urls):
+                        thumb = valid_thumbs[i] if i < len(valid_thumbs) else None
+                        pairs.append((u, thumb))
+
+                for img_url, thumb_url in pairs:
                     num += 1
                     cnt += 1
                     item = TextHelper.nameext_from_url(img_url)
                     item["num"] = num
                     item["image_id"] = TextHelper.parse_int(item.get("filename"))
-                    # Use actual thumbnail from HTML if available, else try to derive
-                    if i < len(thumb_urls) and "imagefap" in thumb_urls[i]:
-                        item["thumbnail_url"] = thumb_urls[i]
-                    else:
-                        item["thumbnail_url"] = TextHelper.make_thumbnail_url(img_url) or ""
+                    item["thumbnail_url"] = thumb_url or TextHelper.make_thumbnail_url(img_url) or ""
                     images.append(item)
 
                 if not cnt or (cnt < 24 and total_count and num >= total_count):

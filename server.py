@@ -115,6 +115,38 @@ async def create_telegraph_page(req: TelegraphRequest):
         logger.error(f"Telegraph error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/proxy")
+async def proxy_image(url: str):
+    """Proxy an image URL through the server to bypass CDN hotlink protection."""
+    import urllib.parse
+    parsed = urllib.parse.urlparse(url)
+    # Only allow proxying imagefap CDN URLs for security
+    if not parsed.hostname or "imagefap.com" not in parsed.hostname:
+        raise HTTPException(status_code=403, detail="Only imagefap.com URLs allowed")
+
+    try:
+        import httpx
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+            resp = await client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Referer": "https://www.imagefap.com/",
+            })
+            if resp.status_code != 200:
+                raise HTTPException(status_code=resp.status_code, detail="Upstream error")
+
+            content_type = resp.headers.get("content-type", "image/jpeg")
+            from fastapi.responses import Response
+            return Response(
+                content=resp.content,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Proxy error: {e}")
+        raise HTTPException(status_code=502, detail=str(e))
+
 # Mount frontend directory
 frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 if os.path.exists(frontend_path):
