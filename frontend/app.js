@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-copy-card" data-url="${escapeHtml(item.url)}">
             <i data-lucide="copy"></i> Copy
           </button>
-          <a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer" download="${escapeHtml(item.filename)}">
+          <a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
             <i data-lucide="external-link"></i> Open
           </a>
         </div>
